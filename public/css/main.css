@@ -41,3 +41,22 @@ body {
 .dashboardTitle {
   margin-bottom: 10px;
 }
+
+#FamilyNamePieChart {
+  display: none;
+}
+
+.searchContainer {
+  display: flex;
+  flex-direction: column;
+}
+
+.selectItemContainer {
+  display: flex;
+}
+
+.selectTypes,
+.selectBoolean,
+.selectItem {
+  flex: 1;
+}

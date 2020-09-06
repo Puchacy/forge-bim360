@@ -60,9 +60,8 @@ class PieChart extends DashboardPanelChart {
 
     drawSearch() {
         var _this = this;
-        console.log('model data ---->', Object.keys(this.modelData._modelData.Level));
         var results = {
-            select1: {
+            select0: {
                 selectedType: "",
                 selectedBoolean: "",
                 selectedItem: "",
@@ -72,44 +71,64 @@ class PieChart extends DashboardPanelChart {
         var selectType = ["Category", "Description", "Level"];
         var selectTypeHtml = '<select class="selectTypes"><option value="">Please select</option></select>';
         var selectBoolean = ["equals", "contain"];
-        var selectBooleanHtml = '<select class="selectBoolean" disabled><option value="">Please select</option></select>';
-        var selectItemHTML = '<select class="selectItem" disabled><option value="">Please select</option></select>';
-        $('#dashboard').append(
-            `<div class="searchContainer">
-                Filtery by:
+        var selectBooleanHtml = '<select class="selectBoolean"><option value="">Please select</option></select>';
+        var selectItemHTML = '<select class="selectItem"><option value="">Please select</option></select>';
+        var selectHtml = 
+            `<div class="selectItemContainer">
                 ${selectTypeHtml}
                 ${selectBooleanHtml}
                 ${selectItemHTML}
-                <button class="filterButton" disabled>Filter</button>
+            </div>`
+        $('#dashboard').append(
+            `<div class="searchContainer">
+                Filtery by:
+                <div class="selectContainer">
+                    ${selectHtml}
+                </div>
+                <div class="buttonContainer">
+                    <button class="addFilterButton">Add New Filter</button>
+                    <button class="filterButton" disabled>Filter</button>
+                </div>
             </div>`
         );
-        selectType.forEach(function(item) {
-            $('.selectTypes').append(`<option value="${item}">${item}</option>`);
-        });
-        selectBoolean.forEach(function(item) {
-            $('.selectBoolean').append(`<option value="${item}">${item}</option>`);
-        });
 
-        function checkValid() {
-            ($(".selectTypes").val() && $(".selectBoolean").val() && $(".selectItem").val()) ?
-            $(".filterButton").prop("disabled", false) : $(".filterButton").prop("disabled", true);
+        function addTypes(index) {
+            selectType.forEach(function(item) {
+                $('.selectTypes').eq(index.toString()).append(`<option value="${item}">${item}</option>`);
+            });
         };
 
-        function resetItems() {
-            $('.selectItem').empty();
-            $('.selectItem').val("");
-            $('.selectItem').append('<option value="">Please select</option>');
-            results.select1.selectedIds = [];
+        function addBoolean(index) {
+            selectBoolean.forEach(function(item) {
+                $('.selectBoolean').eq(index.toString()).append(`<option value="${item}">${item}</option>`);
+            });
+        };
+
+        function checkValid() {
+            Object.keys(results).forEach(function(select) {
+                $(".filterButton").prop("disabled", false);
+                if (!results[select].selectedType || !results[select].selectedBoolean || !results[select].selectedItem) {
+                    return $(".filterButton").prop("disabled", true);
+                }
+            });
+        };
+
+        function resetItems(index) {
+            $('.selectItem').eq(index.toString()).empty();
+            $('.selectItem').eq(index.toString()).val("");
+            $('.selectItem').eq(index.toString()).append('<option value="">Please select</option>');
+            results["select" + index].selectedItem = "";
+            results["select" + index].selectedIds = [];
             checkValid();
         }
 
-        function getItemsIds() {
-            var currentType = results.select1.selectedType;
-            var currentBoolean = results.select1.selectedBoolean;
-            var currentItem = results.select1.selectedItem;
+        function getItemsIds(index) {
+            var currentType = results["select" + index].selectedType;
+            var currentBoolean = results["select" + index].selectedBoolean;
+            var currentItem = results["select" + index].selectedItem;
             if (currentBoolean && currentItem) {
                 if (currentBoolean === "equals") {
-                    results.select1.selectedIds = _this.modelData.getIds(currentType, currentItem);
+                    results["select" + index].selectedIds = _this.modelData.getIds(currentType, currentItem);
                 } else if (currentBoolean === "contain") {
                     var itemsArray = Object.keys(_this.modelData._modelData[currentType]).filter(function(item) {
                         return item.includes(currentItem);
@@ -118,46 +137,73 @@ class PieChart extends DashboardPanelChart {
                     itemsArray.forEach(function(item) {
                         idsArray.push(_this.modelData.getIds(currentType, item));
                     });
-                    results.select1.selectedIds = idsArray.reduce(function(arr1, arr2) {
+                    results["select" + index].selectedIds = idsArray.reduce(function(arr1, arr2) {
                         return arr1.concat(arr2);
                     });
                 };
             };
         };
+        
+        function addChangeSelectTypes() {
+            $(".selectTypes").change(function() {
+                var index = $(this).parent().index();
+                var selectedType = $(this).val();
+                results["select" + index].selectedType = selectedType;
+                resetItems(index);
+                if (selectedType) {
+                    Object.keys(_this.modelData._modelData[selectedType]).forEach(function(item) {
+                        $('.selectItem').eq(index.toString()).append(`<option value="${item}">${item}</option>`);
+                    });
+                };
+                checkValid();
+            });
+        };
 
-        $(".selectTypes").change(function() {
-            checkValid();
-            var selectedType = $(".selectTypes").val();
-            var selectedBoolean = $(".selectBoolean").val();
-            results.select1.selectedType = $(".selectTypes").val();
-            if (selectedType) {
-                $(".selectBoolean").prop("disabled", false);
-                resetItems();
-                Object.keys(_this.modelData._modelData[selectedType]).forEach(function(item) {
-                    $('.selectItem').append(`<option value="${item}">${item}</option>`);
-                });
-            } else {
-                $(".selectBoolean").prop("disabled", true);
-                $(".selectItem").prop("disabled", true);
-            };
+        function addChangeSelectBoolean() {
+            $(".selectBoolean").change(function() {
+                var index = $(this).parent().index();
+                var selectedBoolean = $(this).val();
+                results["select" + index].selectedBoolean = selectedBoolean;
+                getItemsIds(index);
+                checkValid();
+            });
+        };
 
-            if (selectedType && selectedBoolean) {
-                $(".selectItem").prop("disabled", false);
+        function addChangeSelectItem() {
+            $(".selectItem").change(function() {
+                var index = $(this).parent().index();
+                var selectedItem = $(this).val();
+                results["select" + index].selectedItem = selectedItem;
+                getItemsIds(index);
+                checkValid();
+            });
+        };
+
+        function initBindings(index) {
+            addTypes(index);
+            addBoolean(index);
+            addChangeSelectTypes();
+            addChangeSelectBoolean();
+            addChangeSelectItem();
+        };
+
+        initBindings(0);
+
+        $(".addFilterButton").click(function() {
+            $(".selectContainer").append(selectHtml);
+            var numberOfSelects = $(".selectItemContainer").length;
+            var newElIndex = numberOfSelects - 1;
+            initBindings(newElIndex);
+            results["select" + newElIndex] = {
+                selectedType: "",
+                selectedBoolean: "",
+                selectedItem: "",
+                selectedIds: []
             }
-        });
-
-        $(".selectBoolean").change(function() {
-            checkValid()
-            var selectedBoolean = $(".selectBoolean").val();
-            results.select1.selectedBoolean = $(".selectBoolean").val();
-            getItemsIds();
-            selectedBoolean ? $(".selectItem").prop("disabled", false) : $(".selectItem").prop("disabled", true);
-        });
-
-        $(".selectItem").change(function() {
-            checkValid()
-            results.select1.selectedItem = $(".selectItem").val();
-            getItemsIds();
+            if (numberOfSelects === selectType.length) {
+                $(".addFilterButton").prop("disabled", true);
+            };
+            checkValid();
         });
 
         $(".filterButton").click(function() {
@@ -165,8 +211,22 @@ class PieChart extends DashboardPanelChart {
             Object.keys(results).forEach(function(select) {
                 return resultsArr.push(results[select].selectedIds);
             });
-            _this.viewer.isolate(resultsArr[0]);
+            // var finalResultArr = resultsArr.reduce(function(arr1, arr2) {
+            //     return arr1.concat(arr2);
+            // });
+            function intersect(a, b) {
+                var t;
+                if (b.length > a.length) t = b, b = a, a = t;
+                return a.filter(function (e) {
+                    return b.indexOf(e) > -1;
+                });
+            };
+            var finalResultArr = resultsArr.reduce(function(arr1, arr2) {
+                return intersect(arr1, arr2);
+            });
+            _this.viewer.isolate(finalResultArr);
             _this.viewer.utilities.fitToView();
+            console.log(finalResultArr);
         });
     }
 }
