@@ -70,7 +70,7 @@ class PieChart extends DashboardPanelChart {
         };
         var selectType = ["Category", "Description", "Level"];
         var selectTypeHtml = '<select class="selectTypes"><option value="">Please select</option></select>';
-        var selectBoolean = ["equals", "contain"];
+        var selectBoolean = ["equals", "contains"];
         var selectBooleanHtml = '<select class="selectBoolean"><option value="">Please select</option></select>';
         var selectItemHTML = '<select class="selectItem"><option value="">Please select</option></select>';
         var selectHtml = 
@@ -129,7 +129,7 @@ class PieChart extends DashboardPanelChart {
             if (currentBoolean && currentItem) {
                 if (currentBoolean === "equals") {
                     results["select" + index].selectedIds = _this.modelData.getIds(currentType, currentItem);
-                } else if (currentBoolean === "contain") {
+                } else if (currentBoolean === "contains") {
                     var itemsArray = Object.keys(_this.modelData._modelData[currentType]).filter(function(item) {
                         return item.includes(currentItem);
                     });
@@ -191,8 +191,7 @@ class PieChart extends DashboardPanelChart {
 
         $(".addFilterButton").click(function() {
             $(".selectContainer").append(selectHtml);
-            var numberOfSelects = $(".selectItemContainer").length;
-            var newElIndex = numberOfSelects - 1;
+            var newElIndex = $(".selectItemContainer").length - 1;
             initBindings(newElIndex);
             results["select" + newElIndex] = {
                 selectedType: "",
@@ -200,20 +199,20 @@ class PieChart extends DashboardPanelChart {
                 selectedItem: "",
                 selectedIds: []
             }
-            if (numberOfSelects === selectType.length) {
-                $(".addFilterButton").prop("disabled", true);
-            };
             checkValid();
         });
 
         $(".filterButton").click(function() {
-            var resultsArr = [];
+            var resultsObjByType = {};
             Object.keys(results).forEach(function(select) {
-                return resultsArr.push(results[select].selectedIds);
+                var currentType = results[select].selectedType;
+                if (resultsObjByType.hasOwnProperty(currentType)) {
+                    var resultIds = resultsObjByType[currentType];
+                    resultsObjByType[currentType] = resultIds.concat(results[select].selectedIds);
+                } else {
+                    resultsObjByType[currentType] = results[select].selectedIds;
+                };
             });
-            // var finalResultArr = resultsArr.reduce(function(arr1, arr2) {
-            //     return arr1.concat(arr2);
-            // });
             function intersect(a, b) {
                 var t;
                 if (b.length > a.length) t = b, b = a, a = t;
@@ -221,12 +220,11 @@ class PieChart extends DashboardPanelChart {
                     return b.indexOf(e) > -1;
                 });
             };
-            var finalResultArr = resultsArr.reduce(function(arr1, arr2) {
+            var resultArr = Object.values(resultsObjByType).reduce(function(arr1, arr2) {
                 return intersect(arr1, arr2);
             });
-            _this.viewer.isolate(finalResultArr);
+            _this.viewer.isolate(resultArr);
             _this.viewer.utilities.fitToView();
-            console.log(finalResultArr);
         });
     }
 }
