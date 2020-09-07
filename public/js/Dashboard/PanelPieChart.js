@@ -68,17 +68,19 @@ class PieChart extends DashboardPanelChart {
                 selectedIds: []
             }
         };
-        var selectType = ["Category", "Description", "Level"];
+        var selectType = Object.keys(_this.modelData._modelData).sort();
         var selectTypeHtml = '<select class="selectTypes"><option value="">Please select</option></select>';
         var selectBoolean = ["equals", "contains"];
         var selectBooleanHtml = '<select class="selectBoolean"><option value="">Please select</option></select>';
-        var selectItemHTML = '<select class="selectItem"><option value="">Please select</option></select>';
+        var selectItemHTML = 
+            `<select class="selectItem" disabled><option value="">Please select</option></select>
+            <input class="selectItemInput" type="text" hidden>`;
         var selectHtml = 
             `<div class="selectItemContainer">
                 ${selectTypeHtml}
                 ${selectBooleanHtml}
                 ${selectItemHTML}
-            </div>`
+            </div>`;
         $('#dashboard').append(
             `<div class="searchContainer">
                 Filtery by:
@@ -105,7 +107,7 @@ class PieChart extends DashboardPanelChart {
         };
 
         function checkValid() {
-            Object.keys(results).forEach(function(select) {
+            Object.keys(results).some(function(select) {
                 $(".filterButton").prop("disabled", false);
                 if (!results[select].selectedType || !results[select].selectedBoolean || !results[select].selectedItem) {
                     return $(".filterButton").prop("disabled", true);
@@ -114,12 +116,14 @@ class PieChart extends DashboardPanelChart {
         };
 
         function resetItems(index) {
-            $('.selectItem').eq(index.toString()).empty();
-            $('.selectItem').eq(index.toString()).val("");
-            $('.selectItem').eq(index.toString()).append('<option value="">Please select</option>');
+            var currentSelectItem = $(".selectItem").eq(index.toString());
+            var currentSelectItemInput = $(".selectItemInput").eq(index.toString());
+            currentSelectItem.empty();
+            currentSelectItem.val("");
+            currentSelectItem.append('<option value="">Please select</option>');
+            currentSelectItemInput.val("");
             results["select" + index].selectedItem = "";
             results["select" + index].selectedIds = [];
-            checkValid();
         }
 
         function getItemsIds(index) {
@@ -133,13 +137,15 @@ class PieChart extends DashboardPanelChart {
                     var itemsArray = Object.keys(_this.modelData._modelData[currentType]).filter(function(item) {
                         return item.includes(currentItem);
                     });
-                    var idsArray = [];
-                    itemsArray.forEach(function(item) {
-                        idsArray.push(_this.modelData.getIds(currentType, item));
-                    });
-                    results["select" + index].selectedIds = idsArray.reduce(function(arr1, arr2) {
-                        return arr1.concat(arr2);
-                    });
+                    if (itemsArray.length) {
+                        var idsArray = [];
+                        itemsArray.forEach(function(item) {
+                            idsArray.push(_this.modelData.getIds(currentType, item));
+                        });
+                        results["select" + index].selectedIds = idsArray.reduce(function(arr1, arr2) {
+                            return arr1.concat(arr2);
+                        });
+                    }
                 };
             };
         };
@@ -164,13 +170,31 @@ class PieChart extends DashboardPanelChart {
                 var index = $(this).parent().index();
                 var selectedBoolean = $(this).val();
                 results["select" + index].selectedBoolean = selectedBoolean;
-                getItemsIds(index);
+                results["select" + index].selectedItem = '';
+                var currentSelectItem = $(".selectItem").eq(index.toString());
+                var currentSelectItemInput = $(".selectItemInput").eq(index.toString());
+                currentSelectItem.val("");
+                currentSelectItemInput.val("");
+                if (selectedBoolean === "equals") {
+                    currentSelectItem.prop("hidden", false);
+                    currentSelectItem.prop("disabled", false);
+                    currentSelectItemInput.prop("hidden", true);
+                    currentSelectItemInput.prop("disabled", true);
+                } else if (selectedBoolean === "contains") {
+                    currentSelectItem.prop("hidden", true);
+                    currentSelectItem.prop("disabled", true);
+                    currentSelectItemInput.prop("hidden", false);
+                    currentSelectItemInput.prop("disabled", false);
+                } else {
+                    currentSelectItem.prop("hidden") ? 
+                    currentSelectItemInput.prop("disabled", true) : currentSelectItem.prop("disabled", true);
+                }
                 checkValid();
             });
         };
 
         function addChangeSelectItem() {
-            $(".selectItem").change(function() {
+            $(".selectItem, .selectItemInput").change(function() {
                 var index = $(this).parent().index();
                 var selectedItem = $(this).val();
                 results["select" + index].selectedItem = selectedItem;

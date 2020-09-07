@@ -53,12 +53,13 @@ body {
 
 .selectItemContainer {
   display: flex;
+  margin-bottom: 10px;
 }
 
 .selectTypes,
 .selectBoolean,
-.selectItem {
-  flex: 1;
-  width: 100px;
-  margin-bottom: 10px;
+.selectItem,
+.selectItemInput {
+  width: 125px;
+  height: 25px;
 }
