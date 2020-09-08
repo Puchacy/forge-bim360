@@ -60,14 +60,14 @@ class PieChart extends DashboardPanelChart {
 
     drawSearch() {
         var _this = this;
-        var results = {
-            select0: {
+        var results = [
+            {
                 selectedType: "",
                 selectedBoolean: "",
                 selectedItem: "",
                 selectedIds: []
             }
-        };
+        ];
         var selectType = Object.keys(_this.modelData._modelData).sort();
         var selectTypeHtml = '<select class="selectTypes"><option value="">Please select</option></select>';
         var selectBoolean = ["equals", "contains"];
@@ -107,9 +107,9 @@ class PieChart extends DashboardPanelChart {
         };
 
         function checkValid() {
-            Object.keys(results).some(function(select) {
+            results.some(function(select) {
                 $(".filterButton").prop("disabled", false);
-                if (!results[select].selectedType || !results[select].selectedBoolean || !results[select].selectedItem) {
+                if (!select.selectedType || !select.selectedBoolean || !select.selectedItem) {
                     return $(".filterButton").prop("disabled", true);
                 }
             });
@@ -122,27 +122,26 @@ class PieChart extends DashboardPanelChart {
             currentSelectItem.val("");
             currentSelectItem.append('<option value="">Please select</option>');
             currentSelectItemInput.val("");
-            results["select" + index].selectedItem = "";
-            results["select" + index].selectedIds = [];
+            results[index].selectedItem = "";
+            results[index].selectedIds = [];
         }
 
         function getItemsIds(index) {
-            var currentType = results["select" + index].selectedType;
-            var currentBoolean = results["select" + index].selectedBoolean;
-            var currentItem = results["select" + index].selectedItem;
+            var currentType = results[index].selectedType;
+            var currentBoolean = results[index].selectedBoolean;
+            var currentItem = results[index].selectedItem;
             if (currentBoolean && currentItem) {
                 if (currentBoolean === "equals") {
-                    results["select" + index].selectedIds = _this.modelData.getIds(currentType, currentItem);
+                    results[index].selectedIds = _this.modelData.getIds(currentType, currentItem);
                 } else if (currentBoolean === "contains") {
                     var itemsArray = Object.keys(_this.modelData._modelData[currentType]).filter(function(item) {
                         return item.includes(currentItem);
                     });
                     if (itemsArray.length) {
-                        var idsArray = [];
-                        itemsArray.forEach(function(item) {
-                            idsArray.push(_this.modelData.getIds(currentType, item));
+                        var idsArray = itemsArray.map(function(item) {
+                            return _this.modelData.getIds(currentType, item);
                         });
-                        results["select" + index].selectedIds = idsArray.reduce(function(arr1, arr2) {
+                        results[index].selectedIds = idsArray.reduce(function(arr1, arr2) {
                             return arr1.concat(arr2);
                         });
                     }
@@ -154,7 +153,7 @@ class PieChart extends DashboardPanelChart {
             $(".selectTypes").change(function() {
                 var index = $(this).parent().index();
                 var selectedType = $(this).val();
-                results["select" + index].selectedType = selectedType;
+                results[index].selectedType = selectedType;
                 resetItems(index);
                 if (selectedType) {
                     Object.keys(_this.modelData._modelData[selectedType]).forEach(function(item) {
@@ -169,8 +168,8 @@ class PieChart extends DashboardPanelChart {
             $(".selectBoolean").change(function() {
                 var index = $(this).parent().index();
                 var selectedBoolean = $(this).val();
-                results["select" + index].selectedBoolean = selectedBoolean;
-                results["select" + index].selectedItem = '';
+                results[index].selectedBoolean = selectedBoolean;
+                results[index].selectedItem = '';
                 var currentSelectItem = $(".selectItem").eq(index.toString());
                 var currentSelectItemInput = $(".selectItemInput").eq(index.toString());
                 currentSelectItem.val("");
@@ -197,7 +196,7 @@ class PieChart extends DashboardPanelChart {
             $(".selectItem, .selectItemInput").change(function() {
                 var index = $(this).parent().index();
                 var selectedItem = $(this).val();
-                results["select" + index].selectedItem = selectedItem;
+                results[index].selectedItem = selectedItem;
                 getItemsIds(index);
                 checkValid();
             });
@@ -217,24 +216,24 @@ class PieChart extends DashboardPanelChart {
             $(".selectContainer").append(selectHtml);
             var newElIndex = $(".selectItemContainer").length - 1;
             initBindings(newElIndex);
-            results["select" + newElIndex] = {
+            results.push({
                 selectedType: "",
                 selectedBoolean: "",
                 selectedItem: "",
                 selectedIds: []
-            }
+            });
             checkValid();
         });
 
         $(".filterButton").click(function() {
             var resultsObjByType = {};
-            Object.keys(results).forEach(function(select) {
-                var currentType = results[select].selectedType;
+            results.forEach(function(select) {
+                var currentType = select.selectedType;
                 if (resultsObjByType.hasOwnProperty(currentType)) {
                     var resultIds = resultsObjByType[currentType];
-                    resultsObjByType[currentType] = resultIds.concat(results[select].selectedIds);
+                    resultsObjByType[currentType] = resultIds.concat(select.selectedIds);
                 } else {
-                    resultsObjByType[currentType] = results[select].selectedIds;
+                    resultsObjByType[currentType] = select.selectedIds;
                 };
             });
             function intersect(a, b) {
