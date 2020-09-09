@@ -130,7 +130,7 @@ class PieChart extends DashboardPanelChart {
             var currentType = results[index].selectedType;
             var currentBoolean = results[index].selectedBoolean;
             var currentItem = results[index].selectedItem;
-            if (currentBoolean && currentItem) {
+            if (currentType && currentBoolean && currentItem) {
                 if (currentBoolean === "equals") {
                     results[index].selectedIds = _this.modelData.getIds(currentType, currentItem);
                 } else if (currentBoolean === "contains") {
